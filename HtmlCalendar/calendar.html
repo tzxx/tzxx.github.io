@@ -1,0 +1,285 @@
+﻿<!DOCTYPE html>
+<html>
+    <head>
+        <style type="text/css">
+            table,tr,td {
+                border-collapse:collapse;
+                border-style: solid;
+                border-width: thin;
+                font-weight:bold;
+                text-align: center;
+            }
+            td.weekend{
+                color: #f00;
+            }
+            td.workDay {
+                background-color: #ff6a00;
+            }
+            td.workNight{
+                background-color: #ffd800
+            }
+            td.off{
+                background-color: #fff
+            }
+            td.today {
+                color: #0026ff;
+            }
+        </style>
+        <script>
+            var winWidth = 0;
+            var winHeight = 0;
+            function findDimensions() {
+                if (window.innerWidth)
+                    winWidth = window.innerWidth;
+                else if ((document.body) && (document.body.clientWidth))
+                    winWidth = document.body.clientWidth;
+                if (window.innerHeight)
+                    winHeight = window.innerHeight;
+                else if ((document.body) && (document.body.clientHeight))
+                    winHeight = document.body.clientHeight;
+
+                if (document.documentElement && document.documentElement.clientHeight &&
+                                                  document.documentElement.clientWidth) {
+                    winHeight = document.documentElement.clientHeight;
+                    winWidth = document.documentElement.clientWidth;
+                }
+            }
+            findDimensions();
+            var fontSize = winWidth / 7 / 2;
+            var settingFontSize = fontSize / 2;
+            if (document.all) {
+                window.style = "button{font-size:" + fontSize + "px;}" + "table,tr,td {font-size:" + fontSize + "px;}" + "p.big, input, button.setting{font-size:" + settingFontSize + "px;}";
+                document.createStyleSheet("javascript:style");
+            } else {
+                var style = document.createElement('style');
+                style.type = 'text/css';
+                style.innerHTML = "button{font-size:" + fontSize + "px;}" + "table,tr,td {font-size:" + fontSize + "px;}" + "p.big, input, button.setting{font-size:" + settingFontSize + "px;}";
+                document.getElementsByTagName('HEAD').item(0).appendChild(style);
+            } 
+        </script>
+        <title>Yan's Calendar</title>
+    </head>
+    <body>
+        <script>
+            var gyear = 0;
+            var gmonth = 0;
+            var gdayWorkDate = new Date();
+            function initCalendar() {
+                initDayWorkDate();
+                initYearMonth();
+                document.getElementById("calendar").innerHTML = genTable();
+            }
+            function initDayWorkDate() {
+                var year = getCookie("Year");
+                var month = getCookie("Month");
+                var day = getCookie("Day");
+                if (year != null && month != null && day != null) {
+                    var nyear = parseInt(year);
+                    var nmonth = parseInt(month);
+                    var nday = parseInt(day);
+                    if (nyear > 0 && nmonth > 0 && nday > 0) {
+                        gdayWorkDate.setFullYear(nyear, nmonth, nday);
+                        updateCurWorkDate();
+                        /*
+                        // This part can't work in mobile browsers, strange problem.
+                        var str = nyear + "-" + getMonthDayStr(nmonth + 1) + "-" + getMonthDayStr(nday);
+                        var x = document.getElementById("dayWorkDate");
+                        x.setAttribute("value", str);
+                        */
+                        return;
+                    }
+                }
+                gdayWorkDate.setFullYear(2018, 6 - 1, 18);
+                updateCurWorkDate();
+            }
+            function getMonthDayStr(num) {
+                if (num >= 10) {
+                    return num.toString();
+                } else {
+                    return "0" + num.toString();
+                }
+            }
+            function setDayWorkDateToCookie() {
+                setCookie("Year", gdayWorkDate.getFullYear());
+                setCookie("Month", gdayWorkDate.getMonth());
+                setCookie("Day", gdayWorkDate.getDate());
+            }
+            function initYearMonth() {
+                if (gyear < 1970) {
+                    var curTime = new Date();
+                    gyear = curTime.getFullYear();
+                    gmonth = curTime.getMonth();
+                }
+            }
+            function genTable() {
+                return "<table width=\"100%\">" + genTableHeader(gyear, gmonth) + genTableBody(gyear, gmonth) + "</table>";
+            }
+            function genTableHeader(year, month) {
+                var weekdays = new Array("日", "一", "二", "三", "四", "五", "六");
+                var i;
+                var text = "<tr><td colspan=\"7\" align=\"center\">" + year + "年" + (month + 1) + "月" + "</td></tr>";
+                text += "<tr>";
+                for (i = 0; i < weekdays.length; i++) {
+                    if (i == 0 || i == 6) {
+                        text += "<td class=\"weekend\">" + weekdays[i] + "</td>";
+                    }
+                    else {
+                        text += "<td>" + weekdays[i] + "</td>";
+                    }
+                }
+                text += "</tr>";
+                return text;
+            }
+            function genTableBody(year, month) {
+                var startDate = new Date();
+                startDate.setFullYear(year, month, 1);
+                var weekday = startDate.getDay();
+                var monthChangeLimit = 0;
+                var text = "";
+                if (weekday > 0) {
+                    monthChangeLimit++;
+                    startDate = offsetDate(startDate, 0 - weekday);
+                }
+                var curDate = startDate;
+                var prepareExit = false;
+                while (true) {
+                    var weekindex = curDate.getDay();
+                    if (weekindex == 0) {
+                        if (prepareExit) {
+                            break;
+                        }
+                        else {
+                            text += "<tr>";
+                        }
+                    }
+                    text += genDayElement(gdayWorkDate, curDate);
+                    if (weekindex == 6) {
+                        text += "</tr>";
+                    }
+                    var curMonth = curDate.getMonth();
+                    curDate = offsetDate(curDate, 1);
+                    var nextMonth = curDate.getMonth();
+                    if (curMonth != nextMonth) {
+                        if (monthChangeLimit == 0) {
+                            prepareExit = true;
+                        }
+                        else {
+                            monthChangeLimit--;
+                        }
+                    }
+                }
+                return text;
+            }
+            function offsetDate(curDate, days) {
+                var time = curDate.getTime();
+                time += days * 24 * 60 * 60 * 1000;
+                var newDate = new Date();
+                newDate.setTime(time);
+                return newDate;
+            }
+            function genDayElement(workDate, curDate) {
+                var dayNo = curDate.getDate();
+                var baseDate = workDate;
+                baseDate.setHours(0, 0, 0, 0);
+                curDate.setHours(0, 0, 0, 0);
+                var baseTime = baseDate.getTime();
+                var curTime = curDate.getTime();
+                var spanDays = getSpanDays(baseTime, curTime);
+                var tdClass = getDayClass(spanDays);
+                var weekday = curDate.getDay();
+                if ((weekday == 0 || weekday == 6) && !isToday(curDate)) {
+                    tdClass += " weekend";
+                }
+                if (isToday(curDate)) {
+                    tdClass += " today";
+                }
+                var dayStr = dayNo;
+                var text = "<td class=\"" + tdClass + "\" align=\"center\">" + dayStr + "</td>";
+                return text;
+            }
+            function isToday(curDate) {
+                var today = new Date();
+                if (curDate.getFullYear() == today.getFullYear() && curDate.getMonth() == today.getMonth() && curDate.getDate() == today.getDate()) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+            function getSpanDays(baseTime, curTime) {
+                var span = (curTime - baseTime) / (24 * 60 * 60 * 1000);
+                return span;
+            }
+            function getDayClass(spanDays) {
+                if (spanDays < 0) {
+                    spanDays -= spanDays * 4;
+                }
+                var index = spanDays % 4;
+                var classArray = new Array("workDay", "workNight", "off", "off");
+                return classArray[index];
+            }
+            function nextMonth() {
+                gmonth++;
+                if (gmonth > 11) {
+                    gyear++;
+                    gmonth = 0;
+                }
+                document.getElementById("calendar").innerHTML = genTable();
+            }
+            function prevMonth() {
+                gmonth--;
+                if (gmonth < 0) {
+                    gyear--;
+                    gmonth = 11;
+                }
+                document.getElementById("calendar").innerHTML = genTable();
+            }
+            function setDayWorkDate() {
+                var x = document.getElementById("dayWorkDate");
+                var dateStr = x.value;
+                var dateMs = Date.parse(dateStr.toString());
+                var d = new Date();
+                var timeZoneOffset = d.getTimezoneOffset() * 60 * 1000;
+                d.setTime(dateMs + timeZoneOffset);
+                gdayWorkDate.setFullYear(d.getFullYear(), d.getMonth(), d.getDate());
+                updateCurWorkDate();
+                document.getElementById("calendar").innerHTML = genTable();
+                setDayWorkDateToCookie();
+            }
+            function updateCurWorkDate() {
+                var str = gdayWorkDate.toLocaleDateString();
+                document.getElementById("curWorkDate").innerHTML = "当前白班日期：" + str;
+            }
+            function setCookie(c_name, value) {
+                var expiredays = 3000;
+                var exdate = new Date()
+                exdate.setDate(exdate.getDate() + expiredays)
+                document.cookie = c_name + "=" + escape(value) +
+                ((expiredays == null) ? "" : ";expires=" + exdate.toGMTString())
+            }
+            function getCookie(c_name) {
+                if (document.cookie.length > 0) {
+                    c_start = document.cookie.indexOf(c_name + "=")
+                    if (c_start != -1) {
+                        c_start = c_start + c_name.length + 1
+                        c_end = document.cookie.indexOf(";", c_start)
+                        if (c_end == -1) c_end = document.cookie.length
+                        return unescape(document.cookie.substring(c_start, c_end))
+                    }
+                }
+                return null;
+            }
+        </script>
+        <p id="calendar">calendar</p>
+        <button onclick="prevMonth()" style="width: 45%">上月</button>
+        <button onclick="nextMonth()" style="width: 45%">下月</button>
+        <p class="big" id="curWorkDate">
+        </p>
+        <p class="big">
+            变更白班日期：<input type="date" id="dayWorkDate" value="2018-06-18"/>
+            <button class="setting" onclick="setDayWorkDate()">设定</button>
+        </p>
+        <script>
+            initCalendar();
+        </script>
+    </body>
+</html>
