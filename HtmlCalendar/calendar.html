@@ -13,10 +13,10 @@
                 color: #f00;
             }
             td.workDay {
-                background-color: #ff6a00;
+                background: #ff6a00 url('sun.png') no-repeat right top;
             }
             td.workNight{
-                background-color: #ffd800
+                background: #ffd800 url('moon.png') no-repeat right top;
             }
             td.off{
                 background-color: #fff
@@ -65,31 +65,26 @@
             var gmonth = 0;
             var gdayWorkDate = new Date();
             function initCalendar() {
-                initDayWorkDate();
+                var groupNo = getQueryVariable("group");
+                groupNo = (groupNo - 1) % 4 + 1;
+                initDayWorkDate(groupNo);
                 initYearMonth();
                 document.getElementById("calendar").innerHTML = genTable();
             }
-            function initDayWorkDate() {
-                var year = getCookie("Year");
-                var month = getCookie("Month");
-                var day = getCookie("Day");
-                if (year != null && month != null && day != null) {
-                    var nyear = parseInt(year);
-                    var nmonth = parseInt(month);
-                    var nday = parseInt(day);
-                    if (nyear > 0 && nmonth > 0 && nday > 0) {
-                        gdayWorkDate.setFullYear(nyear, nmonth, nday);
-                        updateCurWorkDate();
-                        /*
-                        // This part can't work in mobile browsers, strange problem.
-                        var str = nyear + "-" + getMonthDayStr(nmonth + 1) + "-" + getMonthDayStr(nday);
-                        var x = document.getElementById("dayWorkDate");
-                        x.setAttribute("value", str);
-                        */
-                        return;
-                    }
+            function getQueryVariable(variable) {
+                var query = window.location.search.substring(1);
+                var vars = query.split("&");
+                for (var i = 0; i < vars.length; i++) {
+                    var pair = vars[i].split("=");
+                    if (pair[0] == variable) { return pair[1]; }
                 }
-                gdayWorkDate.setFullYear(2019, 2 - 1, 26);
+                return (false);
+            }
+            function initDayWorkDate(groupNo) {
+                gdayWorkDate.setFullYear(2019, 6 - 1, 6);
+                if(groupNo > 0 && groupNo <= 4) {
+                    gdayWorkDate = offsetDate(gdayWorkDate, groupNo - 1);
+                }
                 updateCurWorkDate();
             }
             function getMonthDayStr(num) {
@@ -98,11 +93,6 @@
                 } else {
                     return "0" + num.toString();
                 }
-            }
-            function setDayWorkDateToCookie() {
-                setCookie("Year", gdayWorkDate.getFullYear());
-                setCookie("Month", gdayWorkDate.getMonth());
-                setCookie("Day", gdayWorkDate.getDate());
             }
             function initYearMonth() {
                 if (gyear < 1970) {
@@ -214,7 +204,7 @@
                     spanDays -= spanDays * 4;
                 }
                 var index = spanDays % 4;
-                var classArray = new Array("workDay", "workNight", "off", "off");
+                var classArray = new Array("workNight", "workDay", "off", "off");
                 return classArray[index];
             }
             function nextMonth() {
@@ -233,50 +223,15 @@
                 }
                 document.getElementById("calendar").innerHTML = genTable();
             }
-            function setDayWorkDate() {
-                var x = document.getElementById("dayWorkDate");
-                var dateStr = x.value;
-                var dateMs = Date.parse(dateStr.toString());
-                var d = new Date();
-                var timeZoneOffset = d.getTimezoneOffset() * 60 * 1000;
-                d.setTime(dateMs + timeZoneOffset);
-                gdayWorkDate.setFullYear(d.getFullYear(), d.getMonth(), d.getDate());
-                updateCurWorkDate();
-                document.getElementById("calendar").innerHTML = genTable();
-                setDayWorkDateToCookie();
-            }
             function updateCurWorkDate() {
                 var str = gdayWorkDate.toLocaleDateString();
-                document.getElementById("curWorkDate").innerHTML = "当前白班日期：" + str;
-            }
-            function setCookie(c_name, value) {
-                var expiredays = 3000;
-                var exdate = new Date()
-                exdate.setDate(exdate.getDate() + expiredays)
-                document.cookie = c_name + "=" + escape(value) +
-                ((expiredays == null) ? "" : ";expires=" + exdate.toGMTString())
-            }
-            function getCookie(c_name) {
-                if (document.cookie.length > 0) {
-                    c_start = document.cookie.indexOf(c_name + "=")
-                    if (c_start != -1) {
-                        c_start = c_start + c_name.length + 1
-                        c_end = document.cookie.indexOf(";", c_start)
-                        if (c_end == -1) c_end = document.cookie.length
-                        return unescape(document.cookie.substring(c_start, c_end))
-                    }
-                }
-                return null;
+                document.getElementById("curWorkDate").innerHTML = "当前起始夜班日期：" + str;
             }
         </script>
         <p id="calendar">calendar</p>
         <button onclick="prevMonth()" style="width: 45%">上月</button>
         <button onclick="nextMonth()" style="width: 45%">下月</button>
         <p class="big" id="curWorkDate">
-        </p>
-        <p class="big">
-            变更白班日期：<input type="date" id="dayWorkDate" value="2019-02-26"/>
-            <button class="setting" onclick="setDayWorkDate()">设定</button>
         </p>
         <script>
             initCalendar();
